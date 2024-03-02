@@ -3,12 +3,11 @@ import { readJSONSync, writeJSONSync } from 'fs-extra';
 import { merge } from 'lodash-es';
 import { Dirent, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { Parser } from './Parser';
 import { agents, config, localesDir, meta, publicDir, schemasDir } from './const';
-import { LobeAgent, lobeAgentSchema } from './schema/agentMeta';
 import { checkDir, checkJSON, findDuplicates, getLocaleAgentFileName } from './utils';
+import Agent from "./shared/agent";
 
 class Builder {
   private agents: Dirent[];
@@ -23,16 +22,19 @@ class Builder {
    * @param locale
    */
   private buildSingleLocaleAgents = (locale: string) => {
-    const agentIndex: LobeAgent[] = [];
+    const agentIndex: Agent[] = [];
     for (const file of this.agents) {
       // if file is not json ,skip it
-      if (!checkJSON(file)) continue;
+      if (!checkJSON(file)) {
+        console.warn('file is not json, skip:', file.name)
+        continue;
+      }
       const { content, locale: defaultLocale, id } = Parser.parseFile(file.name);
 
       const localeFileName = getLocaleAgentFileName(id, locale);
 
       // find correct agent content
-      let agent: LobeAgent;
+      let agent: Agent;
       if (defaultLocale === locale) {
         agent = content;
       } else {
@@ -50,13 +52,14 @@ class Builder {
 
       // add agent meta to index
       agentIndex.push({
-        author: agent.author,
-        createAt: agent.createAt,
-        homepage: agent.homepage,
         identifier: agent.identifier,
-        meta: agent.meta,
+        name: agent.name,
+        description: agent.description,
+        tags: agent.tags,
+        engine: agent.engine,
+        models: agent.models,
         schemaVersion: agent.schemaVersion,
-      });
+      } as Agent);
     }
 
     return agentIndex.sort(
@@ -66,20 +69,7 @@ class Builder {
   };
 
   run = async () => {
-    this.buildSchema();
     await this.buildFullLocaleAgents();
-  };
-
-  buildSchema = () => {
-    consola.start(`build agent schema`);
-    checkDir(schemasDir);
-    checkDir(resolve(publicDir, 'schema'));
-
-    const schema = zodToJsonSchema(lobeAgentSchema);
-    const fileName = `lobeAgentSchema_v${meta.schemaVersion}.json`;
-    writeJSONSync(resolve(schemasDir, fileName), schema);
-    writeJSONSync(resolve(publicDir, 'schema', fileName), schema);
-    consola.success(`build success`);
   };
 
   buildFullLocaleAgents = async () => {
@@ -92,7 +82,7 @@ class Builder {
       let tags = [];
 
       agents.forEach((agent) => {
-        tags = [...tags, ...agent.meta.tags];
+        tags = [...tags, ...agent.tags];
       });
 
       tags = findDuplicates(tags);

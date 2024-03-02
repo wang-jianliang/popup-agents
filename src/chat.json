@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "identifier": "chat-with-the-bot",
+  "name": "Chat with the bot",
+  "description": "Chat with the selection",
+  "engine": "ChatGPT",
+  "models": ["gpt-3.5-turbo"],
+  "tags": ["common"],
+  "prompts": {
+    "selection": "${selection}\n",
+    "image": ""
+  },
+  "autoSend": false
+}
