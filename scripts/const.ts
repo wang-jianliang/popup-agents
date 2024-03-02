@@ -13,10 +13,6 @@ export const localesDir = resolve(root, './locales');
 export const publicDir = resolve(root, './public');
 
 export const agents = readdirSync(agentsDir, { withFileTypes: true });
-export const agentLocales = readdirSync(localesDir, { withFileTypes: true });
-
-export const templatePath = resolve(root, 'agent-template.json');
-export const templateFullPath = resolve(root, 'agent-template-full.json');
 
 export const indexPath = resolve(publicDir, 'index.json');
 
